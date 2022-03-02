@@ -179,8 +179,9 @@ end
 ---@class lir
 local lir = {}
 
-function lir.init()
-  local path = vim.fn.resolve(vim.fn.expand("%:p"))
+-- Open lir if current buf is directory
+function lir.init(path)
+  path = path or vim.fn.resolve(vim.fn.expand("%:p"))
 
   if path == "" or not Path:new(path):is_dir() then
     return

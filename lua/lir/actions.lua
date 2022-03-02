@@ -3,6 +3,7 @@ local utils = require("lir.utils")
 local config = require("lir.config")
 local lvim = require("lir.vim")
 local Path = require("plenary.path")
+local lir = require("lir")
 
 local sep = Path.path.sep
 
@@ -63,6 +64,12 @@ function actions.edit(opts)
     actions.quit()
   end
 
+  local path = dir .. file
+  -- Go directly and reuse lir buffer if directory is opened
+  if Path:new(path):is_dir() then
+    return lir.init(path)
+  end
+
   local cmd = (vim.api.nvim_buf_get_option(0, "modified") and modified_split_command) or "edit"
 
   vim.cmd(string.format("%s %s %s", keepalt, cmd, vim.fn.fnameescape(dir .. file)))
@@ -97,7 +104,10 @@ function actions.up()
   dir = vim.fn.fnamemodify(path, ":p:h:h")
   history.add(path, cur_file)
   history.add(dir, name)
-  vim.cmd("keepalt edit " .. dir)
+
+  -- vim.cmd("keepalt edit " .. dir)
+  lir.init(dir)
+
   if is_root(dir) then
     vim.cmd("doautocmd BufEnter")
   end
