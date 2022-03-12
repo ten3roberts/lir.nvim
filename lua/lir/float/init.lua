@@ -1,4 +1,3 @@
-local actions = require("lir.actions")
 local lir = require("lir")
 local lvim = require("lir.vim")
 local config = require("lir.config")
@@ -47,6 +46,7 @@ local function calculate_position(win_config)
   return win_config
 end
 
+
 --- 中央配置のウィンドウを開く
 ---@return number win_id
 local function open_win(opts, winblend)
@@ -56,7 +56,7 @@ local function open_win(opts, winblend)
   vim.cmd("setlocal nocursorcolumn")
   a.nvim_win_set_option(win_id, "winblend", winblend)
 
-  vim.cmd(string.format("autocmd WinLeave <buffer> silent! execute 'bdelete! %s'", bufnr))
+  vim.cmd(string.format("autocmd WinLeave <buffer> silent! call v:lua.__lir_float_close(%s)'", bufnr))
 
   return win_id
 end
@@ -77,8 +77,7 @@ end
 function float.toggle(dir)
   local float_win = find_lir_float_win()
   if float_win then
-    a.nvim_set_current_win(float_win)
-    actions.quit()
+    float.close()
   else
     float.init(dir)
   end
@@ -92,9 +91,13 @@ function float.close()
     if config.values.float.curdir_window.enable then
       pcall(a.nvim_win_close, a.nvim_win_get_var(float_win, "lir_curdir_win").win_id, true)
     end
-    actions.quit()
+
+    local bufnr = a.nvim_win_get_buf(float_win)
+    a.nvim_buf_delete(bufnr, {})
   end
 end
+
+_G.__lir_float_close = float.close
 
 -- setlocal を使っているため、毎回セットする必要があるため BufWinEnter で呼び出す
 function float.setlocal_winhl()

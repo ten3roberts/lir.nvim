@@ -1,4 +1,5 @@
 local history = require("lir.history")
+local float = require("lir.float")
 local utils = require("lir.utils")
 local config = require("lir.config")
 local lvim = require("lir.vim")
@@ -118,7 +119,7 @@ end
 --- quit
 function actions.quit()
   if vim.w.lir_is_float then
-    a.nvim_win_close(0, true)
+    float.close()
   else
     if vim.w.lir_file_quit_on_edit ~= nil then
       vim.cmd("edit " .. vim.w.lir_file_quit_on_edit)
