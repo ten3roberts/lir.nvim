@@ -17,10 +17,18 @@ local Context = {}
 
 ---@param dir string
 ---@return lir_context
-function Context.new(dir)
+local Path = require("plenary.path")
+local sep = Path.path.sep
+
+function Context.new(dir, files)
   local self = setmetatable({}, { __index = Context })
+
+  if not vim.endswith(dir, sep) then
+    dir = dir .. sep
+  end
+
   self.dir = dir
-  self.files = nil
+  self.files = files
   return self
 end
 

@@ -1,4 +1,5 @@
 local actions = require("lir.actions")
+local lir = require("lir")
 local lvim = require("lir.vim")
 local config = require("lir.config")
 local CurdirWindow = require("lir.float.curdir_window")
@@ -114,10 +115,9 @@ end
 
 ---@param dir_path? string
 function float.init(dir_path)
-  local dir, file, old_win
+  local dir, old_win
   if vim.bo.filetype == "lir" and dir_path == nil then
     dir = lvim.get_context().dir
-    file = lvim.get_context():current_value()
 
     if not vim.w.lir_is_float then
       old_win = a.nvim_get_current_win()
@@ -126,10 +126,8 @@ function float.init(dir_path)
     if is_terminal_current_win() then
       --- If terminal, use cwd
       dir = dir_path or vim.fn["getcwd"]()
-      file = nil
     else
       dir = dir_path or vim.fn.expand("%:p:h")
-      file = vim.fn.expand("%:p")
     end
   end
 
@@ -143,12 +141,9 @@ function float.init(dir_path)
   local win_id = open_win(win_config, config.values.float.winblend)
 
   vim.t.lir_float_winid = win_id
-  -- To move the cursor
-  if file then
-    vim.w.lir_file_jump_cursor = file
-  end
-  vim.cmd("edit " .. vim.fn.fnameescape(dir))
   vim.w.lir_is_float = true
+
+  lir.init(dir);
 
   -- current directory window
   if config.values.float.curdir_window.enable then
@@ -156,6 +151,7 @@ function float.init(dir_path)
   end
 
   float.setlocal_winhl()
+
 
   -- 空バッファに置き換える
   if old_win then

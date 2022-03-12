@@ -66,6 +66,7 @@ function actions.edit(opts)
 
   local path = dir .. file
   -- Go directly and reuse lir buffer if directory is opened
+  history.add(dir, file)
   if Path:new(path):is_dir() then
     return lir.init(path)
   end
@@ -73,7 +74,6 @@ function actions.edit(opts)
   local cmd = (vim.api.nvim_buf_get_option(0, "modified") and modified_split_command) or "edit"
 
   vim.cmd(string.format("%s %s %s", keepalt, cmd, vim.fn.fnameescape(dir .. file)))
-  history.add(dir, file)
 end
 
 --- split
@@ -101,7 +101,9 @@ function actions.up()
   if name == "" then
     return
   end
+
   dir = vim.fn.fnamemodify(path, ":p:h:h")
+
   history.add(path, cur_file)
   history.add(dir, name)
 
@@ -126,8 +128,9 @@ end
 
 --- mkdir
 function actions.mkdir()
-  local name = vim.fn.input("Create directory: ")
-  if name == "" then
+  local ctx = get_context()
+  vim.ui.input( {prompt="Create directory: "}, function(name)
+  if not name or name == "" then
     return
   end
 
@@ -136,7 +139,6 @@ function actions.mkdir()
     return
   end
 
-  local ctx = get_context()
   local path = Path:new(ctx.dir .. name)
   if path:exists() then
     utils.error("Directory already exists")
@@ -157,6 +159,7 @@ function actions.mkdir()
     if lnum then
       vim.cmd(tostring(lnum))
     end
+  end)
   end)
 end
 
@@ -191,10 +194,11 @@ function actions.rename(use_default)
 
     -- If target is a directory, move the file into the directory.
     -- Makes it work like linux `mv`
-    local stat = uv.fs_stat(new)
+    local stat = uv.fs_stat(ctx.dir .. new)
     if stat and stat.type == "directory" then
       new = string.format("%s/%s", new, old)
     end
+    print(new)
 
     if not uv.fs_rename(ctx.dir .. old, ctx.dir .. new) then
       utils.error("Rename failed")
@@ -248,11 +252,15 @@ end
 --- newfile
 function actions.newfile()
   local ctx = get_context()
-  if vim.w.lir_is_float then
-    a.nvim_feedkeys(":close | :edit " .. ctx.dir, "n", true)
-  else
-    a.nvim_feedkeys(":keepalt edit " .. ctx.dir, "n", true)
-  end
+  vim.ui.input({ prompt="Filename: "}, function(input)
+    if input and input ~= "" then
+      if vim.w.lir_is_float then
+        vim.cmd(":close | :edit " .. ctx.dir .. input)
+      else
+        vim.cmd(":keepalt edit " .. ctx.dir .. input)
+      end
+    end
+  end)
 end
 
 --- cd
@@ -264,7 +272,7 @@ end
 
 --- reload
 function actions.reload(_)
-  vim.cmd([[edit]])
+  lir.init(get_context().dir)
 end
 
 --- yank_path
