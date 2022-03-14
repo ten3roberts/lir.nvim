@@ -56,7 +56,7 @@ local function open_win(opts, winblend)
   vim.cmd("setlocal nocursorcolumn")
   a.nvim_win_set_option(win_id, "winblend", winblend)
 
-  vim.cmd(string.format("autocmd WinLeave <buffer> silent! call v:lua.__lir_float_close(%s)'", bufnr))
+  vim.cmd(string.format("autocmd WinLeave <buffer> call v:lua.__lir_float_close(%s)", bufnr))
 
   return win_id
 end
@@ -97,7 +97,18 @@ function float.close()
   end
 end
 
-_G.__lir_float_close = float.close
+-- Only close if current window is not a popup, e.g rename or input
+local function protected_close()
+  vim.defer_fn(function()
+    if vim.fn.win_gettype() == "popup" then
+      return
+    end
+
+    float.close()
+  end, 200)
+end
+
+_G.__lir_float_close = protected_close
 
 -- setlocal を使っているため、毎回セットする必要があるため BufWinEnter で呼び出す
 function float.setlocal_winhl()
@@ -119,6 +130,7 @@ end
 ---@param dir_path? string
 function float.init(dir_path)
   local dir, old_win
+  local file = vim.fn.expand("%:t")
   if vim.bo.filetype == "lir" and dir_path == nil then
     dir = lvim.get_context().dir
 
@@ -146,7 +158,7 @@ function float.init(dir_path)
   vim.t.lir_float_winid = win_id
   vim.w.lir_is_float = true
 
-  lir.init(dir);
+  lir.init(dir, file);
 
   -- current directory window
   if config.values.float.curdir_window.enable then
@@ -154,7 +166,6 @@ function float.init(dir_path)
   end
 
   float.setlocal_winhl()
-
 
   -- 空バッファに置き換える
   if old_win then

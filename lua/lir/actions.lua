@@ -109,7 +109,7 @@ function actions.up()
   history.add(dir, name)
 
   -- vim.cmd("keepalt edit " .. dir)
-  lir.init(dir)
+  lir.init(dir, name)
 
   if is_root(dir) then
     vim.cmd("doautocmd BufEnter")
@@ -256,7 +256,8 @@ function actions.newfile()
   vim.ui.input({ prompt="Filename: "}, function(input)
     if input and input ~= "" then
       if vim.w.lir_is_float then
-        vim.cmd(":close | :edit " .. ctx.dir .. input)
+        float.close()
+        vim.cmd(":edit " .. ctx.dir .. input)
       else
         vim.cmd(":keepalt edit " .. ctx.dir .. input)
       end

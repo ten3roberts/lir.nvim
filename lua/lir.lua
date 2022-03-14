@@ -107,14 +107,18 @@ end
 --- Set the lines while adjusting the cursor to feel good
 ---@param dir string
 ---@param lines string[]
-local function setlines(dir, lines)
+local function setlines(dir, lines, f)
   local lnum = 1
-  if history.exists(dir) then
+  if f then
+    lnum = lvim.get_context():indexof(f)
+  elseif history.exists(dir) then
     lnum = lvim.get_context():indexof(history.get(dir))
   end
 
   a.nvim_buf_set_lines(0, 0, -1, true, lines)
-  vim.fn.setpos(".", { 0, lnum, 0, 0 })
+  if lnum then
+    vim.fn.setpos(".", { 0, lnum, 0, 0 })
+  end
 
   -- local before, after = tbl_sub(lines, 1, lnum - 1), tbl_sub(lines, lnum)
   -- a.nvim_put(before, "l", false, true)
@@ -157,8 +161,9 @@ end
 local lir = {}
 
 -- Open lir if current buf is directory
-function lir.init(path)
+function lir.init(path, f)
   path = path or vim.fn.resolve(vim.fn.expand("%:p"))
+  f = f or vim.fn.expand("%:t")
 
   if path == "" or not Path:new(path):is_dir() then
     return
@@ -199,7 +204,8 @@ function lir.init(path)
     path,
     vim.tbl_map(function(item)
       return item.display
-    end, files)
+    end, files),
+    f
   )
 
   highlight.update_highlight(files)
