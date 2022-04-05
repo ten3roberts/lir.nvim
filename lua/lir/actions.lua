@@ -69,7 +69,7 @@ function actions.edit(opts)
   -- Go directly and reuse lir buffer if directory is opened
   history.add(dir, file)
   if Path:new(path):is_dir() then
-    return lir.init(path)
+    return lir.init(path, nil, ctx.target_win)
   end
 
   vim.cmd(string.format("%s edit %s", keepalt, fn.fnameescape(dir .. file)))
@@ -108,7 +108,7 @@ function actions.up()
   history.add(dir, name)
 
   -- vim.cmd("keepalt edit " .. dir)
-  lir.init(dir, name)
+  lir.init(dir, name, ctx.target_win)
 
   if is_root(dir) then
     vim.cmd("doautocmd BufEnter")
@@ -117,12 +117,11 @@ end
 
 --- quit
 function actions.quit()
+  local ctx = get_context()
   if vim.w.lir_is_float then
     float.close()
   else
-    if vim.w.lir_file_quit_on_edit ~= nil then
-      vim.cmd("edit " .. vim.w.lir_file_quit_on_edit)
-    end
+    a.nvim_set_current_win(ctx.target_win);
   end
 end
 
@@ -239,7 +238,7 @@ function actions.delete(force)
     local buf = fn.bufnr(vim.fn.fnameescape(ctx.dir .. name))
 
     if buf ~= -1 then
-      a.nvim_buf_delete(buf)
+      a.nvim_buf_delete(buf, {})
     end
 
   actions.reload()
