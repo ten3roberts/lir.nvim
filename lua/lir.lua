@@ -161,7 +161,7 @@ end
 local lir = {}
 
 -- Open lir if current buf is directory
-function lir.init(path, f)
+function lir.init(path, f, win)
   path = path or vim.fn.resolve(vim.fn.expand("%:p"))
   f = f or vim.fn.expand("%:t")
 
@@ -197,7 +197,7 @@ function lir.init(path, f)
 
   table.sort(files, sort)
 
-  local context = Context.new(path, files)
+  local context = Context.new(path, files, win)
   lvim.set_context(context)
 
   setlines(

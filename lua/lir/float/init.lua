@@ -97,7 +97,7 @@ function float.close()
 end
 
 -- Only close if current window is not a popup, e.g rename or input
-local function protected_close()
+function float.protected_close()
   vim.defer_fn(function()
     if vim.fn.win_gettype() == "popup" then
       return
@@ -107,7 +107,7 @@ local function protected_close()
   end, 200)
 end
 
-_G.__lir_float_close = protected_close
+_G.__lir_float_close = float.protected_close
 
 -- setlocal を使っているため、毎回セットする必要があるため BufWinEnter で呼び出す
 function float.setlocal_winhl()
@@ -145,6 +145,8 @@ function float.init(dir_path)
     end
   end
 
+  local win = a.nvim_get_current_win()
+
   local user_win_opts = {}
   if type(config.values.float.win_opts) == "function" then
     user_win_opts = config.values.float.win_opts()
@@ -157,7 +159,8 @@ function float.init(dir_path)
   vim.t.lir_float_winid = win_id
   vim.w.lir_is_float = true
 
-  lir.init(dir, file);
+  print("old: ", win)
+  lir.init(dir, file, win);
 
   -- current directory window
   if config.values.float.curdir_window.enable then

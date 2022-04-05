@@ -72,9 +72,8 @@ function actions.edit(opts)
     return lir.init(path)
   end
 
-  local cmd = (vim.api.nvim_buf_get_option(0, "modified") and modified_split_command) or "edit"
+  vim.cmd(string.format("%s edit %s", keepalt, fn.fnameescape(dir .. file)))
 
-  vim.cmd(string.format("%s %s %s", keepalt, cmd, vim.fn.fnameescape(dir .. file)))
 end
 
 --- split
@@ -131,36 +130,36 @@ end
 function actions.mkdir()
   local ctx = get_context()
   vim.ui.input( {prompt="Create directory: "}, function(name)
-  if not name or name == "" then
-    return
-  end
-
-  if name == "." or name == ".." then
-    utils.error("Invalid directory name: " .. name)
-    return
-  end
-
-  local path = Path:new(ctx.dir .. name)
-  if path:exists() then
-    utils.error("Directory already exists")
-    -- cursor jump
-    local lnum = ctx:indexof(name)
-    if lnum then
-      vim.cmd(tostring(lnum))
+    if not name or name == "" then
+      return
     end
-    return
-  end
 
-  path:mkdir({ parents = true })
-
-  actions.reload()
-
-  vim.schedule(function()
-    local lnum = lvim.get_context():indexof(name)
-    if lnum then
-      vim.cmd(tostring(lnum))
+    if name == "." or name == ".." then
+      utils.error("Invalid directory name: " .. name)
+      return
     end
-  end)
+
+    local path = Path:new(ctx.dir .. name)
+    if path:exists() then
+      utils.error("Directory already exists")
+      -- cursor jump
+      local lnum = ctx:indexof(name)
+      if lnum then
+        vim.cmd(tostring(lnum))
+      end
+      return
+    end
+
+    path:mkdir({ parents = true })
+
+    actions.reload()
+
+    vim.schedule(function()
+      local lnum = lvim.get_context():indexof(name)
+      if lnum then
+        vim.cmd(tostring(lnum))
+      end
+    end)
   end)
 end
 
@@ -199,9 +198,17 @@ function actions.rename(use_default)
     if stat and stat.type == "directory" then
       new = string.format("%s/%s", new, old)
     end
-    print(new)
 
-    if not uv.fs_rename(ctx.dir .. old, ctx.dir .. new) then
+
+    new = ctx.dir .. new
+    -- Rename buffers
+    local buf = fn.bufnr(vim.fn.fnameescape(ctx.dir .. old))
+
+    if buf ~= -1 then
+      a.nvim_buf_set_name(buf, new)
+    end
+
+    if not uv.fs_rename(ctx.dir .. old, new) then
       utils.error("Rename failed")
     end
 
@@ -228,6 +235,12 @@ function actions.delete(force)
       return
     end
   end
+
+    local buf = fn.bufnr(vim.fn.fnameescape(ctx.dir .. name))
+
+    if buf ~= -1 then
+      a.nvim_buf_delete(buf)
+    end
 
   actions.reload()
 end
@@ -256,8 +269,10 @@ function actions.newfile()
   vim.ui.input({ prompt="Filename: "}, function(input)
     if input and input ~= "" then
       if vim.w.lir_is_float then
-        float.close()
+        print("Target: " .. ctx.target_win)
+        a.nvim_set_current_win(ctx.target_win);
         vim.cmd(":edit " .. ctx.dir .. input)
+        float.protected_close()
       else
         vim.cmd(":keepalt edit " .. ctx.dir .. input)
       end

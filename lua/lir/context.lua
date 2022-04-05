@@ -5,6 +5,7 @@
 ---@class lir_context
 ---@field dir   string
 ---@field files lir_item[]
+-- @field target_win number
 local Context = {}
 
 ---@class lir_item
@@ -20,8 +21,9 @@ local Context = {}
 local Path = require("plenary.path")
 local sep = Path.path.sep
 
-function Context.new(dir, files)
+function Context.new(dir, files, win)
   local self = setmetatable({}, { __index = Context })
+  win = win ~= 0 and win or vim.api.nvim_get_current_win()
 
   if not vim.endswith(dir, sep) then
     dir = dir .. sep
@@ -29,6 +31,7 @@ function Context.new(dir, files)
 
   self.dir = dir
   self.files = files
+  self.target_win = win
   return self
 end
 
