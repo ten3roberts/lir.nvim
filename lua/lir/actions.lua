@@ -62,7 +62,8 @@ function actions.edit(opts)
 
   if vim.w.lir_is_float and not ctx:is_dir_current() then
     -- 閉じてから開く
-    actions.quit()
+    a.nvim_set_current_win(ctx.target_win);
+    float.protected_close()
   end
 
   local path = dir .. file
@@ -128,7 +129,7 @@ end
 --- mkdir
 function actions.mkdir()
   local ctx = get_context()
-  vim.ui.input( {prompt="Create directory: "}, function(name)
+  vim.ui.input({ prompt = "Create directory: " }, function(name)
     if not name or name == "" then
       return
     end
@@ -235,11 +236,11 @@ function actions.delete(force)
     end
   end
 
-    local buf = fn.bufnr(vim.fn.fnameescape(ctx.dir .. name))
+  local buf = fn.bufnr(vim.fn.fnameescape(ctx.dir .. name))
 
-    if buf ~= -1 then
-      a.nvim_buf_delete(buf, {})
-    end
+  if buf ~= -1 then
+    a.nvim_buf_delete(buf, {})
+  end
 
   actions.reload()
 end
@@ -265,10 +266,9 @@ end
 --- newfile
 function actions.newfile()
   local ctx = get_context()
-  vim.ui.input({ prompt="Filename: "}, function(input)
+  vim.ui.input({ prompt = "Filename: " }, function(input)
     if input and input ~= "" then
       if vim.w.lir_is_float then
-        print("Target: " .. ctx.target_win)
         a.nvim_set_current_win(ctx.target_win);
         vim.cmd(":edit " .. ctx.dir .. input)
         float.protected_close()
